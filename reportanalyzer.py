@@ -20,8 +20,7 @@ except LookupError:
     try:
         nltk.download('punkt', quiet=True)
     except Exception as e:
-        pass  # Graceful fallback if download fails
-
+        print(f"Warning: Failed to download NLTK 'punkt' tokenizer: {e}")
 
 class MedicalReportAnalyzer:
     """Class to analyze and extract information from medical reports."""
