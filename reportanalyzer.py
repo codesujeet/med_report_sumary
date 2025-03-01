@@ -10,17 +10,49 @@ import plotly.express as px
 import PyPDF2
 import docx
 from typing import Dict, List, Set, Optional, Any, Tuple
-import nltk
-from nltk.tokenize import sent_tokenize
 
-# Try to download nltk data, with error handling
+# Try to use NLTK for sentence tokenization, but provide fallback if not available
 try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
+    import nltk
+    from nltk.tokenize import sent_tokenize
+    
+    # Check if punkt is available, download if possible
     try:
-        nltk.download('punkt', quiet=True)
-    except Exception as e:
-        print(f"Warning: Failed to download NLTK 'punkt' tokenizer: {e}")
+        nltk.data.find('tokenizers/punkt')
+        NLTK_AVAILABLE = True
+    except LookupError:
+        try:
+            nltk.download('punkt', quiet=True)
+            NLTK_AVAILABLE = True
+        except Exception as e:
+            st.warning(f"NLTK punkt tokenizer not available: {e}. Using fallback tokenizer.")
+            NLTK_AVAILABLE = False
+except ImportError:
+    st.warning("NLTK not installed. Using fallback tokenizer.")
+    NLTK_AVAILABLE = False
+
+def fallback_sent_tokenize(text: str) -> List[str]:
+    """Simple sentence tokenizer when NLTK is not available"""
+    if not text:
+        return []
+    # Split by common sentence terminators followed by space/newline
+    sentences = re.split(r'(?<=[.!?])\s+', text)
+    # Filter out empty strings
+    return [s for s in sentences if s.strip()]
+
+def safe_sent_tokenize(text: str) -> List[str]:
+    """Use NLTK if available, otherwise use fallback tokenizer"""
+    if not text:
+        return []
+    
+    if NLTK_AVAILABLE:
+        try:
+            return sent_tokenize(text)
+        except Exception:
+            pass  # Fall back to simple tokenizer on any error
+    
+    return fallback_sent_tokenize(text)
+
 
 class MedicalReportAnalyzer:
     """Class to analyze and extract information from medical reports."""
@@ -65,6 +97,9 @@ class MedicalReportAnalyzer:
             # Clean content
             content = self._clean_text(content)
             
+            # Use the safe tokenizer instead of direct NLTK function
+            sentence_count = len(safe_sent_tokenize(content)) if content else 0
+            
             report = {
                 'name': file.name,
                 'content': content,
@@ -74,7 +109,7 @@ class MedicalReportAnalyzer:
                 'metadata': {
                     'word_count': len(content.split()),
                     'character_count': len(content),
-                    'sentence_count': len(sent_tokenize(content)) if content else 0
+                    'sentence_count': sentence_count
                 }
             }
             
@@ -87,16 +122,24 @@ class MedicalReportAnalyzer:
 
     def _extract_pdf_content(self, file) -> str:
         """Extract text content from PDF files."""
-        pdf_bytes = io.BytesIO(file.read())
-        pdf_reader = PyPDF2.PdfReader(pdf_bytes)
-        content = "\n".join(page.extract_text() for page in pdf_reader.pages if page.extract_text())
-        return content
+        try:
+            pdf_bytes = io.BytesIO(file.read())
+            pdf_reader = PyPDF2.PdfReader(pdf_bytes)
+            content = "\n".join(page.extract_text() for page in pdf_reader.pages if page.extract_text())
+            return content
+        except Exception as e:
+            st.error(f"Error extracting PDF content: {str(e)}")
+            return ""
     
     def _extract_docx_content(self, file) -> str:
         """Extract text content from DOCX files."""
-        doc = docx.Document(io.BytesIO(file.read()))
-        content = "\n".join(paragraph.text for paragraph in doc.paragraphs if paragraph.text)
-        return content
+        try:
+            doc = docx.Document(io.BytesIO(file.read()))
+            content = "\n".join(paragraph.text for paragraph in doc.paragraphs if paragraph.text)
+            return content
+        except Exception as e:
+            st.error(f"Error extracting DOCX content: {str(e)}")
+            return ""
     
     def _clean_text(self, text: str) -> str:
         """Clean and normalize text content."""
@@ -324,18 +367,17 @@ def render_sidebar():
         # Add a system status section
         with st.expander("System Status"):
             st.markdown("""
-            - **NLTK Data**: Checking...
+            - **Tokenizer Status**: Checking...
             """)
-            try:
-                nltk.data.find('tokenizers/punkt')
+            if NLTK_AVAILABLE:
                 st.success("NLTK Tokenizer: Available")
-            except LookupError:
-                st.error("NLTK Tokenizer: Not Available")
+            else:
+                st.warning("NLTK Tokenizer: Not Available (using fallback)")
             
         # Version information
         st.markdown("---")
-        st.markdown("**Version**: 1.1.0")
-        st.markdown("**Last Updated**: 2025-02-26")
+        st.markdown("**Version**: 1.2.0")
+        st.markdown("**Last Updated**: 2025-03-01")
 
 
 def main():
@@ -596,7 +638,7 @@ def main():
                 if st.button("Save Configuration", use_container_width=True):
                     config = {
                         "patterns": st.session_state.analyzer.findings_patterns,
-                        "version": "1.1.0"
+                        "version": "1.2.0"
                     }
                     st.download_button(
                         "Download Configuration File",
@@ -629,7 +671,7 @@ def main():
     st.markdown("---")
     st.markdown("""
         <div style='text-align: center'>
-            <p>🏥 Medical Report Analyzer v1.1.0</p>
+            <p>🏥 Medical Report Analyzer v1.2.0</p>
             <p>For educational and assistive purposes only. Always verify findings with healthcare professionals.</p>
         </div>
     """, unsafe_allow_html=True)
