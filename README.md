@@ -30,26 +30,26 @@ A **Streamlit**-based web application for **quick, accurate, and effortless** an
    cd medical-report-summary
 Create a Virtual Environment (Optional but Recommended)
 
-bash
+```bash
 
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 Install Dependencies
 
-bash
+```bash
 
 pip install -r requirements.txt
 Set Up API Keys (Gemini API)
 Create a .env file and add:
 
-bash
+```bash
 
 GEMINI_API_KEY=your_api_key_here
 Run the App
 
 
 streamlit run app.py
-🖥️ Usage
+## 🖥️ Usage
 Open the app in your browser using the displayed local URL.
 Upload a medical report in PDF or text format.
 Click "Summarize" to generate AI-driven insights.
