@@ -34,14 +34,14 @@ Create a Virtual Environment (Optional but Recommended)
 
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-Install Dependencies
+Install Dependencies```
 
 ```bash
 
 pip install -r requirements.txt
 Set Up API Keys (Gemini API)
 Create a .env file and add:
-
+```
 ```bash
 
 GEMINI_API_KEY=your_api_key_here
@@ -49,6 +49,7 @@ Run the App
 
 
 streamlit run app.py
+```
 ## 🖥️ Usage
 Open the app in your browser using the displayed local URL.
 Upload a medical report in PDF or text format.
