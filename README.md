@@ -34,7 +34,8 @@ Create a Virtual Environment (Optional but Recommended)
 
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-Install Dependencies```
+Install Dependencies
+```
 
 ```bash
 
